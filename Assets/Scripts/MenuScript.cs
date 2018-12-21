@@ -128,7 +128,7 @@ public class MenuScript : MonoBehaviour
 
     public StaticConfig staticConfig = new StaticConfig();
 
-    
+    static private bool isFirstStart = true;
 
     void Awake()
     {
@@ -169,8 +169,9 @@ public class MenuScript : MonoBehaviour
         UpdateMapsAndMenu();
         InitGlobalShadowSettings();
 
-        if (staticConfig.initialized)
+        if (staticConfig.initialized && isFirstStart)
         {
+            isFirstStart = false;
             ShowFreeRoaming();
             OnRunClick();
         }
@@ -198,19 +199,27 @@ public class MenuScript : MonoBehaviour
 
     public void ShowFreeRoaming()
     {
+        AnalyticsManager.Instance?.MenuButtonEvent("FreeRoaming");
         Activate(FreeRoamingPanel);
         IsTrainingMode = false;
         Ros.Bridge.canConnect = true;
     }
 
+    public void ShowEditor()
+    {
+        AnalyticsManager.Instance?.MenuButtonEvent("Editor");
+    }
+
     public void ShowTraining()
     {
-        Activate(FreeRoamingPanel);
-        IsTrainingMode = true;
+        AnalyticsManager.Instance?.MenuButtonEvent("Training");
+        //Activate(FreeRoamingPanel);
+        //IsTrainingMode = true;
     }
 
     public void ShowAbout()
     {
+        AnalyticsManager.Instance?.MenuButtonEvent("About");
         Activate(aboutPanel);
         MainPanel.SetActive(true);
         buildVersionText.text = BuildInfo.buildVersion;
@@ -350,7 +359,7 @@ public class MenuScript : MonoBehaviour
         {
             if (Input.GetKey(KeyCode.LeftShift) == false)
             {
-                StartCoroutine(HideErrorAfter(3.0f));
+                StartCoroutine(HideErrorAfter(1.0f));
                 return;
             }
         }
@@ -359,6 +368,8 @@ public class MenuScript : MonoBehaviour
         Robots.Save();
 
         selectedSceneName = loadableSceneNames[MapDropdown.value];
+
+        AnalyticsManager.Instance?.MapStartEvent(selectedSceneName);
 
         // TODO: add nice loading progress to both async operations (bundle and scene loading)
         var loader = SceneManager.LoadSceneAsync(selectedSceneName);
@@ -370,13 +381,13 @@ public class MenuScript : MonoBehaviour
     IEnumerator HideErrorAfter(float seconds)
     {
         RunButton.interactable = false;
-        runButtonText.text = "ERROR: please connect your ROS Robots!";
+        runButtonText.text = "ERROR: Failed connecting to ROS bridge!";
         runButtonImage.color = errorColor;
 
         yield return new WaitForSeconds(seconds);
 
         float elapsedTime = 0f;
-        while (elapsedTime < 1f)
+        while (elapsedTime < 3.0f)
         {
             runButtonImage.color = Color.Lerp(errorColor, origRunButtonColor, (elapsedTime / 1f));
             elapsedTime += Time.deltaTime;
@@ -466,6 +477,8 @@ public class MenuScript : MonoBehaviour
             }
 
             var bot = Instantiate(robotSetup == null ? Robots.robotCandidates[0].gameObject : robotSetup.gameObject, spawnPos - new Vector3(0.25f * i, 0, 0), spawnRot);
+
+            AnalyticsManager.Instance?.EgoStartEvent(robotSetup == null ? Robots.robotCandidates[0].gameObject.name : robotSetup.gameObject.name);
 
             var bridgeConnector = Robots.Robots[i];
 

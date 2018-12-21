@@ -46,7 +46,7 @@ public class TrafAIMotor : MonoBehaviour
 
     public int currentIndex;
     public TrafEntry currentEntry;
-    private TrafEntry nextEntry;
+    public TrafEntry nextEntry;
     private bool hasNextEntry;
 
     private TrafEntry registeredEntry;
@@ -89,9 +89,9 @@ public class TrafAIMotor : MonoBehaviour
     private Vector3 nextTarget;
 
     private bool doRaycast;
-    static int carCheckHeightBitmask = -1;
-    static int carCheckBlockBitmask = -1;
-    static int frontSideDetectBitmask = -1;
+    public LayerMask heightMask;
+    public LayerMask blockMask;
+    public LayerMask sideDetectMask;
 
     int dodgeCode;
 
@@ -152,20 +152,18 @@ public class TrafAIMotor : MonoBehaviour
 
     void Awake()
     {
-        if (carCheckHeightBitmask == -1)
-        {
-            carCheckHeightBitmask = 1 << LayerMask.NameToLayer("Ground And Road");
-        }
-
-        if (carCheckBlockBitmask == -1)
-        {
-            carCheckBlockBitmask = ~(1 << LayerMask.NameToLayer("Ground And Road") | 1 << LayerMask.NameToLayer("PlayerConstrain") | 1 << LayerMask.NameToLayer("Sensor Effects"));
-        }
-
-        if (frontSideDetectBitmask == -1)
-        {
-            frontSideDetectBitmask = ~(1 << LayerMask.NameToLayer("Ground And Road") | 1 << LayerMask.NameToLayer("Concave Environment Prop") | 1 << LayerMask.NameToLayer("Sensor Effects"));
-        }
+        //if (heightMask == -1)
+        //{
+        //    heightMask = 1 << LayerMask.NameToLayer("Ground And Road");
+        //}
+        //if (blockMask == -1)
+        //{
+        //    blockMask = ~(1 << LayerMask.NameToLayer("Ground And Road") | 1 << LayerMask.NameToLayer("PlayerConstrain")); // | 1 << LayerMask.NameToLayer("Sensor Effects")); TODO Why Sensor Effects?
+        //}
+        //if (sideDetectMask == -1)
+        //{
+        //    sideDetectMask = ~(1 << LayerMask.NameToLayer("Ground And Road") | 1 << LayerMask.NameToLayer("Concave Environment Prop")); // | 1 << LayerMask.NameToLayer("Sensor Effects")); TODO Why Sensor Effects?
+        //}
     }
 
     //Util function
@@ -345,7 +343,7 @@ public class TrafAIMotor : MonoBehaviour
         float midHitDist = 1000f;
         float leftHitDist = 1000f;
         float rightHitDist = 1000f;
-        if (Physics.Raycast(nose.position, nose.forward, out hitInfo, frontBrakeRaycastDistance, carCheckBlockBitmask))
+        if (Physics.Raycast(nose.position, nose.forward, out hitInfo, frontBrakeRaycastDistance, blockMask))
         {
             midHitDist = hitInfo.distance;
             if (hitInfo.distance < minHitDistance)
@@ -355,7 +353,7 @@ public class TrafAIMotor : MonoBehaviour
             }
         }
 
-        if (Physics.Raycast(noseRight.position, noseRight.forward, out hitInfo, frontBrakeRaycastDistance, carCheckBlockBitmask))
+        if (Physics.Raycast(noseRight.position, noseRight.forward, out hitInfo, frontBrakeRaycastDistance, blockMask))
         {
             rightHitDist = hitInfo.distance;
             if (hitInfo.distance < minHitDistance)
@@ -365,7 +363,7 @@ public class TrafAIMotor : MonoBehaviour
             }
         }
 
-        if (Physics.Raycast(noseLeft.position, noseLeft.forward, out hitInfo, frontBrakeRaycastDistance, carCheckBlockBitmask))
+        if (Physics.Raycast(noseLeft.position, noseLeft.forward, out hitInfo, frontBrakeRaycastDistance, blockMask))
         {
             leftHitDist = hitInfo.distance;
             if (hitInfo.distance < minHitDistance)
@@ -443,7 +441,7 @@ public class TrafAIMotor : MonoBehaviour
     //TODO: tend to target height over time
     void CheckHeight()
     {
-        if (Physics.Raycast(transform.position + Vector3.up * 3f, -Vector3.up, out heightHit, 25f, carCheckHeightBitmask))
+        if (Physics.Raycast(transform.position + Vector3.up * 3f, -Vector3.up, out heightHit, 25f, heightMask))
         {
             targetHeight = heightHit.point.y;
             if (rb != null)
@@ -1081,13 +1079,13 @@ public class TrafAIMotor : MonoBehaviour
                 //light is red, stop here
                 hasStopTarget = true;
                 stopTarget = nextTarget;
-
             }
             else if(hasStopTarget && nextEntry.light.State == TrafLightState.GREEN)
             {
 
                 //green light, go!                   
                 hasStopTarget = false;
+
                 return;
             }
             else if(!hasStopTarget && nextEntry.light.State == TrafLightState.YELLOW)
@@ -1095,7 +1093,7 @@ public class TrafAIMotor : MonoBehaviour
                 //yellow, stop if we aren't zooming on through
                 //TODO: carry on if we are too fast/close
 
-                if(Vector3.Distance(nextTarget, nose.position) > yellowLightGoDistance * (maxSpeedRange.y / 11f))
+                if (Vector3.Distance(nextTarget, nose.position) > yellowLightGoDistance * (maxSpeedRange.y / 11f))
                 {
                     hasStopTarget = true;
                     stopTarget = nextTarget;
@@ -1144,7 +1142,7 @@ public class TrafAIMotor : MonoBehaviour
                 }
             }
             else
-            {                
+            {
                 frontSpeed = 0f;
             }
 
@@ -1238,7 +1236,7 @@ public class TrafAIMotor : MonoBehaviour
         {
             var capsulePointL = noseLeft.position + frontSideRaycastDistance * 0.5f * (nose.forward - nose.right).normalized;
             var capsulePointR = noseRight.position + frontSideRaycastDistance * 0.5f * (nose.forward + nose.right).normalized;
-            var cols = Physics.OverlapCapsule(capsulePointL, capsulePointR, frontSideRaycastDistance, frontSideDetectBitmask);
+            var cols = Physics.OverlapCapsule(capsulePointL, capsulePointR, frontSideRaycastDistance, sideDetectMask);
 
             float minReachTime = 1000f;
             Vector3 pickedClosingVel = Vector3.zero;
@@ -1404,8 +1402,8 @@ public class TrafAIMotor : MonoBehaviour
         if (rb == null)
             return;
 
-        if (DEBUG)
-            Debug.Log("Speed: " + rb.velocity.magnitude);
+        //if (DEBUG)
+        //    Debug.Log("Speed: " + rb.velocity.magnitude);
 
         // old system
         //transform.Rotate(0f, currentTurn * Time.deltaTime, 0f);
@@ -1418,8 +1416,8 @@ public class TrafAIMotor : MonoBehaviour
         {
             aiController.AccelBrakeInput = (targetSpeed - rb.velocity.magnitude > 0) ? 1f : -1f;
             aiController.SteerInput = (currentTurn / maxTurn);
-            if (DEBUG)
-                Debug.Log("Speed: " + rb.velocity.magnitude);
+            //if (DEBUG)
+            //    Debug.Log("Speed: " + rb.velocity.magnitude);
         }
         else
         {

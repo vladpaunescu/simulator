@@ -51,5 +51,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06702f6bba2ae9c46a104b3f7a6e9f87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dashUIPrefab: {fileID: 1564381431854762, guid: 373521130c5fae344a0e2e3dccdd1969,
-    type: 2}
+  dashUI: {fileID: 1564381431854762, guid: 373521130c5fae344a0e2e3dccdd1969, type: 2}
+  managers:
+  - {fileID: 1304844862834418, guid: f13b2934c7578934aa1e3c7bd2ae634a, type: 2}
+  exitKey: 27
+  toggleUIKey: 32
+  saveRobotPos: 286
+  loadRobotPos: 290
+  spawnObstacle: 291
+  demo: 292
